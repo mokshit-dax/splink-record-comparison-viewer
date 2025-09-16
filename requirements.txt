@@ -1,0 +1,7 @@
+streamlit>=1.28.0
+duckdb>=0.9.0
+pandas>=2.0.0
+altair>=5.0.0
+altair
+diff-match-patch>=1.0.5
+numpy>=1.24.0
