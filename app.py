@@ -5,89 +5,206 @@ from components.record_forms import create_record_forms
 from components.visualization import display_results
 from utils.duckdb_handler import DuckDBHandler
 from utils.splink_utils import prediction_row_to_waterfall_format
+import mlflow
+import ast
+from splink import DuckDBAPI, Linker
 
+# Load temp model json which is preloaded
+with open('data/record_data.json', 'r') as f:
+    temp_model = json.load(f)
+ 
 # Page config
 st.set_page_config(
     page_title="Splink Record Comparison",
     page_icon="🔗",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-def main():
-    st.title("Splink Record Comparison Tool")
-    st.markdown("Compare two records using a Splink data linking model")
+# Custom CSS for better styling
+st.markdown("""
+<style>
+    .main-header {
+        text-align: center;
+        padding: 2rem 0;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
     
-    # Load example data
-    with open('data/record_data.json', 'r') as f:
-        record_data = json.load(f)
+    .main-header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
     
-    # Initialize session state
-    if 'record_index' not in st.session_state:
-        st.session_state.record_index = 0
+    .main-header p {
+        margin: 0.5rem 0 0 0;
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    
+    .record-section {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 1rem;
+    }
+    
+    .record-section h3 {
+        color: #495057;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+    }
+    
+    .calculate-section {
+        text-align: center;
+        padding: 2rem 0;
+        background: #ffffff;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+        margin: 2rem 0;
+    }
+    
+    .status-success {
+        color: #28a745;
+        font-weight: 600;
+    }
+    
+    .status-error {
+        color: #dc3545;
+        font-weight: 600;
+    }
+    
+    .metric-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin: 0.5rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-    # Navigation controls
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col1:
-        if st.button("⬅️ Previous", disabled=st.session_state.record_index == 0):
-            st.session_state.record_index -= 1
-            st.rerun()
+def convert_to_json(data):
+  if isinstance(data, dict):
+      return {k: convert_to_json(v) for k, v in data.items()}
+  elif isinstance(data, list):
+      return [convert_to_json(item) for item in data]
+  elif isinstance(data, (str, int, float, bool)):
+      return data
+  elif data is None:
+      return None
+  else:
+      try:
+          return str(data)
+      except Exception:
+          return None
+
+def calculate_predictions(left_record, right_record, linker_json):
+    """
+    Returns a splink prediction dataframe
+    """
+    try:
+        # Convert records to dataframes
+        left_df = pd.DataFrame([left_record])
+        right_df = pd.DataFrame([right_record])
+        
+        # Initialize Splink linker
+        linker = Linker(
+            input_table_or_tables=[left_df, right_df],
+            db_api=DuckDBAPI(),
+            settings=linker_json,
+        )
+        
+        # Run prediction
+        return linker.inference.predict()
+        
+    except Exception as e:
+        st.error(f"Error during prediction calculation: {str(e)}")
+        raise
+
+def main():
+    # Header section
+    st.markdown("""
+    <div class="main-header">
+        <h1>🔗 Splink Record Comparison</h1>
+        <p>Compare two records using advanced data linking algorithms</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Model loading section
+    with st.container():
+        st.markdown("### 📊 Model Configuration")
+        linker_json = temp_model
+        additional_columns_to_retain = linker_json['additional_columns_to_retain']
+        
+        # Display model info in a nice card
+        st.markdown(f"""
+        <div class="metric-card">
+            <strong>📋 Record Schema:</strong> {', '.join(additional_columns_to_retain)}
+        </div>
+        """, unsafe_allow_html=True)
     
-    with col2:
-        st.write(f"Record {st.session_state.record_index + 1} of {len(record_data)}")
-    
-    with col3:
-        if st.button("Next ➡️", disabled=st.session_state.record_index >= len(record_data) - 1):
-            st.session_state.record_index += 1
-            st.rerun()
-    
-    # Get current record pair
-    current_record = record_data[st.session_state.record_index]
+    # Record input section
+    st.markdown("### 📝 Record Input")
+    st.markdown("Enter the details for both records you want to compare:")
     
     # Create two-column layout for forms
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2, gap="large")
     
     with col1:
-        st.subheader("📝 Record Left")
+        st.markdown('<div class="record-section">', unsafe_allow_html=True)
+        st.markdown("#### 📝 Record A")
         left_record = create_record_forms(
-            current_record['record_left'], 
-            key_prefix="left"
+            {}, 
+            key_prefix="left",
+            additional_columns_to_retain=additional_columns_to_retain
         )
+        st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
-        st.subheader("📝 Record Right")
+        st.markdown('<div class="record-section">', unsafe_allow_html=True)
+        st.markdown("#### 📝 Record B")
         right_record = create_record_forms(
-            current_record['record_right'], 
-            key_prefix="right"
+            {}, 
+            key_prefix="right",
+            additional_columns_to_retain=additional_columns_to_retain
         )
+        st.markdown('</div>', unsafe_allow_html=True)
     
-    # Add calculate button
-    st.markdown("---")
-    col1, col2, col3 = st.columns([1, 1, 1])
+    # Calculate button section
+    st.markdown('<div class="calculate-section">', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        calculate_button = st.button("🔍 Calculate Match", type="primary", use_container_width=True)
+        calculate_button = st.button("🔍 Calculate Match Score", type="primary", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Run comparison only when button is clicked
     if left_record and right_record and calculate_button:
-        with st.spinner("Running Splink comparison..."):
+        with st.spinner("🔄 Analyzing records and calculating match score..."):
             try:
-                # Initialize DuckDB handler
-                db_handler = DuckDBHandler()
+                result = calculate_predictions(left_record, right_record, linker_json)
                 
-                # Run the comparison
-                result = db_handler.compare_records(left_record, right_record)
-                
-                if result:
+                if result.as_record_dict()[0]:
                     # Store result in session state for display
-                    st.session_state.last_result = result
+                    st.session_state.last_result = result.as_record_dict()[0]
                     st.session_state.last_left_record = left_record
                     st.session_state.last_right_record = right_record
+                    st.write(result.as_record_dict()[0])
+                    st.success("✅ Comparison completed successfully!")
                 else:
-                    st.error("No comparison results returned")
+                    st.error("❌ No comparison results returned")
             except Exception as e:
-                st.error(f"Failed to run comparison: {str(e)}")
-    
+                st.error(f"❌ Failed to run comparison: {str(e)}")
+
     # Display results if available
     if 'last_result' in st.session_state and 'last_left_record' in st.session_state and 'last_right_record' in st.session_state:
+        st.markdown("---")
+        st.markdown("### 📈 Comparison Results")
         display_results(st.session_state.last_result, st.session_state.last_left_record, st.session_state.last_right_record)
 
 if __name__ == "__main__":

@@ -1,58 +1,318 @@
-[
+{
+  "link_type": "link_only",
+  "probability_two_random_records_match": 2.1492054788570626e-09,
+  "retain_matching_columns": true,
+  "retain_intermediate_calculation_columns": true,
+  "additional_columns_to_retain": [
+    "salt_key",
+    "unique_id",
+    "mapped_contact_id",
+    "infogroup_id",
+    "id",
+    "first_lower",
+    "last_lower",
+    "nicknames_list",
+    "phone_list",
+    "email_cleaned",
+    "business_name_list",
+    "in_business",
+    "address_standardized_street_no",
+    "address_standardized_street",
+    "address_standardized_pre_directional",
+    "address_standardized_post_directional",
+    "address_standardized_occupancy_type",
+    "address_standardized_occupancy_identifier",
+    "address_standardized_place",
+    "state_cleaned",
+    "address_standardized_state",
+    "address_standardized_zip_code",
+    "address_standardized"
+  ],
+  "sql_dialect": "duckdb",
+  "linker_uid": "skjjshel",
+  "em_convergence": 0.0001,
+  "max_iterations": 25,
+  "bayes_factor_column_prefix": "bf_",
+  "term_frequency_adjustment_column_prefix": "tf_",
+  "comparison_vector_value_column_prefix": "gamma_",
+  "unique_id_column_name": "unique_id",
+  "source_dataset_column_name": "source_dataset",
+  "blocking_rules_to_generate_predictions": [
     {
-      "record_left": {
-        "unique_id": "Q2296770-1",
-        "cluster": "Q2296770",
-        "first_name": "tom",
-        "surname": "chudleigh",
-        "dob": null,
-        "birth_place": null,
-        "postcode_fake": null,
-        "occupation": null
-      },
-      "record_right": {
-        "unique_id": "Q2296770-1",
-        "cluster": "Q2296770",
-        "first_name": "thomas",
-        "surname": "chudleigh",
-        "dob": "1630-08-01",
-        "birth_place": "devon",
-        "postcode_fake": "tq13 8df",
-        "occupation": "politician"
-      }
+      "blocking_rule": "l.first_lower=r.first_lower AND l.email_cleaned=r.email_cleaned",
+      "sql_dialect": "duckdb"
     },
     {
-      "record_left": {
-        "unique_id": "Q2296770-1",
-        "cluster": "Q2296770",
-        "first_name": "thomas",
-        "surname": "chudleigh",
-        "dob": "1630-08-01",
-        "birth_place": "devon",
-        "postcode_fake": "tq13 8df",
-        "occupation": "politician",
-        "first_name_surname_concat": "thomas chudleigh",
-        "tf_first_name_surname_concat": 0.000018837,
-        "tf_surname": 0.00003449,
-        "tf_first_name": 0.000018837,
-        "tf_birth_place": 0.000504,
-        "tf_occupation": 0.0038905
-      },
-      "record_right": {
-        "unique_id": "Q2296770-1",
-        "cluster": "Q2296770",
-        "first_name": "thomas",
-        "surname": "chudleigh",
-        "dob": "1630-08-01",
-        "birth_place": "devon",
-        "postcode_fake": "tq13 8df",
-        "occupation": "politician",
-        "first_name_surname_concat": "thomas chudleigh",
-        "tf_first_name_surname_concat": 0.00018837,
-        "tf_surname": 0.0003449,
-        "tf_first_name": 0.00018837,
-        "tf_birth_place": 0.00504,
-        "tf_occupation": 0.038905
-      }
+      "blocking_rule": "l.last_lower=r.last_lower AND l.email_cleaned=r.email_cleaned",
+      "sql_dialect": "duckdb"
+    },
+    {
+      "blocking_rule": "l.email_cleaned=r.email_cleaned AND array_has_any(l.business_name_list, r.business_name_list)",
+      "sql_dialect": "duckdb"
+    },
+    {
+      "blocking_rule": "l.first_lower=r.first_lower AND l.last_lower=r.last_lower AND list_has_any(list_transform(l.business_name_list, x -> LEFT(x, 3)), list_transform(r.business_name_list, y -> LEFT(y, 3)))",
+      "sql_dialect": "duckdb"
+    },
+    {
+      "blocking_rule": "l.first_lower=r.first_lower AND l.address_standardized_zip_code=r.address_standardized_zip_code AND damerau_levenshtein(l.address_standardized_street, r.address_standardized_street) <= 2",
+      "sql_dialect": "duckdb"
+    },
+    {
+      "blocking_rule": "l.last_lower=r.last_lower AND l.address_standardized_zip_code=r.address_standardized_zip_code AND damerau_levenshtein(l.address_standardized_street, r.address_standardized_street) <= 2",
+      "sql_dialect": "duckdb"
+    }
+  ],
+  "comparisons": [
+    {
+      "output_column_name": "f_name",
+      "comparison_levels": [
+        {
+          "sql_condition": "\"first_lower_l\" IS NULL OR \"first_lower_r\" IS NULL",
+          "label_for_charts": "first_lower is NULL",
+          "fix_m_probability": false,
+          "fix_u_probability": false,
+          "is_null_level": true
+        },
+        {
+          "sql_condition": "\"first_lower_l\" = \"first_lower_r\" ",
+          "label_for_charts": "Exact Match with term frequency adjustment on first_lower ",
+          "m_probability": 0.9579432996664117,
+          "u_probability": 0.0018601970106052617,
+          "fix_m_probability": false,
+          "fix_u_probability": false,
+          "tf_adjustment_column": "first_lower",
+          "tf_adjustment_weight": 1.0
+        },
+        {
+          "sql_condition": "(list_contains(nicknames_list_l, first_lower_r) or list_contains(nicknames_list_r, first_lower_l))",
+          "label_for_charts": "Nickname comparison",
+          "m_probability": 0.012762364542043039,
+          "u_probability": 0.0017815197627226579,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "(damerau_levenshtein(\"first_lower_l\", \"first_lower_r\") <= 2)",
+          "label_for_charts": "Damerau-Levenshtein Distance on first_lower <= 2",
+          "m_probability": 0.007522479524859455,
+          "u_probability": 0.010313383658811417,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "ELSE",
+          "label_for_charts": "All other comparisons",
+          "m_probability": 0.021771856266685843,
+          "u_probability": 0.9860448995678607,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        }
+      ],
+      "comparison_description": "CustomComparison"
+    },
+    {
+      "output_column_name": "l_name",
+      "comparison_levels": [
+        {
+          "sql_condition": "\"last_lower_l\" IS NULL OR \"last_lower_r\" IS NULL",
+          "label_for_charts": "last_lower is NULL",
+          "fix_m_probability": false,
+          "fix_u_probability": false,
+          "is_null_level": true
+        },
+        {
+          "sql_condition": "\"last_lower_l\" = \"last_lower_r\" ",
+          "label_for_charts": "Exact Match with term frequency adjustment on last_lower ",
+          "m_probability": 0.9687148285988272,
+          "u_probability": 0.00027281038446369115,
+          "fix_m_probability": false,
+          "fix_u_probability": false,
+          "tf_adjustment_column": "last_lower",
+          "tf_adjustment_weight": 1.0
+        },
+        {
+          "sql_condition": "(damerau_levenshtein(\"last_lower_l\", \"last_lower_r\") <= 2)",
+          "label_for_charts": "Damerau-Levenshtein Distance on last_lower <= 2",
+          "m_probability": 0.008614469426203643,
+          "u_probability": 0.002071033928789415,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "ELSE",
+          "label_for_charts": "All other comparisons",
+          "m_probability": 0.02267070197496921,
+          "u_probability": 0.9976561556867469,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        }
+      ],
+      "comparison_description": "CustomComparison"
+    },
+    {
+      "output_column_name": "email",
+      "comparison_levels": [
+        {
+          "sql_condition": "\"email_cleaned_l\" IS NULL OR \"email_cleaned_r\" IS NULL",
+          "label_for_charts": "email_cleaned is NULL",
+          "fix_m_probability": false,
+          "fix_u_probability": false,
+          "is_null_level": true
+        },
+        {
+          "sql_condition": "\"email_cleaned_l\" = \"email_cleaned_r\" ",
+          "label_for_charts": "Exact Match with term frequency adjustment on email_cleaned ",
+          "u_probability": 1.9810188755678226e-09,
+          "fix_m_probability": false,
+          "fix_u_probability": false,
+          "tf_adjustment_column": "email_cleaned",
+          "tf_adjustment_weight": 1.0
+        },
+        {
+          "sql_condition": "(damerau_levenshtein(\"email_cleaned_l\", \"email_cleaned_r\") <= 1)",
+          "label_for_charts": "Damerau-Levenshtein Distance on email_cleaned <= 1",
+          "u_probability": 3.962037751135645e-09,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "ELSE",
+          "label_for_charts": "All other comparisons",
+          "u_probability": 0.9999999940569434,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        }
+      ],
+      "comparison_description": "CustomComparison"
+    },
+    {
+      "output_column_name": "phone",
+      "comparison_levels": [
+        {
+          "sql_condition": "\"phone_list_l\" IS NULL OR \"phone_list_r\" IS NULL",
+          "label_for_charts": "phone_list is NULL",
+          "fix_m_probability": false,
+          "fix_u_probability": false,
+          "is_null_level": true
+        },
+        {
+          "sql_condition": "list_has_any(list_filter(\"phone_list_l\", x -> length(x) > 0), list_filter(\"phone_list_r\", y -> length(y) > 0))",
+          "label_for_charts": "Exact List Match",
+          "m_probability": 0.0021729867856426386,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "ELSE",
+          "label_for_charts": "All other comparisons",
+          "m_probability": 0.9978270132143574,
+          "u_probability": 1.0,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        }
+      ],
+      "comparison_description": "CustomComparison"
+    },
+    {
+      "output_column_name": "business_name",
+      "comparison_levels": [
+        {
+          "sql_condition": "\"business_name_list_l\" IS NULL OR \"business_name_list_r\" IS NULL",
+          "label_for_charts": "business_name_list is NULL",
+          "fix_m_probability": false,
+          "fix_u_probability": false,
+          "is_null_level": true
+        },
+        {
+          "sql_condition": "list_has_any(list_filter(\"business_name_list_l\", x -> length(x) > 0), list_filter(\"business_name_list_r\", y -> length(y) > 0))",
+          "label_for_charts": "Exact List Match",
+          "u_probability": 5.020216298185323e-05,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "list_min(\n                        list_transform(\n                            flatten(\n                                list_transform(\n                                    business_name_list_l,\n                                    x -> list_transform(\n                                        business_name_list_r,\n                                        y -> [x,y]\n                                    )\n                                )\n                            ),\n                            pair -> damerau_levenshtein(pair[1], pair[2])\n                        )\n                    ) <= 2",
+          "label_for_charts": "Pairwise damerau_levenshtein on business_name_list <= 2 with no additional conditions",
+          "u_probability": 0.00036961393255377983,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "list_min(\n                        list_transform(\n                            flatten(\n                                list_transform(\n                                    business_name_list_l,\n                                    x -> list_transform(\n                                        business_name_list_r,\n                                        y -> [x,y]\n                                    )\n                                )\n                            ),\n                            pair -> damerau_levenshtein(pair[1], pair[2])\n                        )\n                    ) <= 3",
+          "label_for_charts": "Pairwise damerau_levenshtein on business_name_list <= 3 with no additional conditions",
+          "u_probability": 0.0020411670709635636,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "(list_contains(\n    flatten(\n        list_transform(\n            business_name_list_l,\n            x -> list_transform(\n                business_name_list_r,\n                y -> (jaro_winkler_similarity(x, y) >= 0.85) AND (len(x) > 6 AND len(y) > 6)\n            )\n        )\n    )\n, true)\n)",
+          "label_for_charts": "Jaro-Winkler Similarity with threshold 0.85 and min_length 6 on business_name_list",
+          "u_probability": 0.00046660611865625214,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "(list_contains(\n    flatten(\n        list_transform(\n            business_name_list_l,\n            x -> list_transform(\n                business_name_list_r,\n                y -> (jaccard(x, y) >= 0.85) AND (len(x) > 6 AND len(y) > 6)\n            )\n        )\n    )\n, true)\n)",
+          "label_for_charts": "Jaccard Similarity with threshold 0.85 and min_length 6 on business_name_list",
+          "u_probability": 0.0012580921934393745,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "ELSE",
+          "label_for_charts": "All other comparisons",
+          "u_probability": 0.9958143185214052,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        }
+      ],
+      "comparison_description": "CustomComparison"
+    },
+    {
+      "output_column_name": "business_address",
+      "comparison_levels": [
+        {
+          "sql_condition": "\"address_standardized_l\" IS NULL OR \"address_standardized_r\" IS NULL",
+          "label_for_charts": "address_standardized is NULL",
+          "fix_m_probability": false,
+          "fix_u_probability": false,
+          "is_null_level": true
+        },
+        {
+          "sql_condition": "((state_cleaned_l = address_standardized_state_r)\nAND (\n    address_standardized_street_no_l IS NULL OR\n    address_standardized_street_no_r IS NULL OR\n    address_standardized_street_no_l = address_standardized_street_no_r\n)\nAND (\n    address_standardized_street_l IS NULL OR\n    address_standardized_street_r IS NULL OR\n    address_standardized_street_l = address_standardized_street_r\n)\nAND (\n    address_standardized_zip_code_l IS NULL OR\n    address_standardized_zip_code_r IS NULL OR\n    address_standardized_zip_code_l = address_standardized_zip_code_r\n)\nAND (\n    address_standardized_pre_directional_l IS NULL OR\n    address_standardized_pre_directional_r IS NULL OR\n    address_standardized_pre_directional_l = address_standardized_pre_directional_r\n)\nAND (\n    address_standardized_post_directional_l IS NULL OR\n    address_standardized_post_directional_r IS NULL OR\n    address_standardized_post_directional_l = address_standardized_post_directional_r\n)\nAND (\n    address_standardized_occupancy_type_l IS NULL OR\n    address_standardized_occupancy_type_r IS NULL OR\n    address_standardized_occupancy_type_l = address_standardized_occupancy_type_r\n)\nAND (\n    address_standardized_occupancy_identifier_l IS NULL OR\n    address_standardized_occupancy_identifier_r IS NULL OR\n    address_standardized_occupancy_identifier_l = address_standardized_occupancy_identifier_r\n)\nAND (\n    address_standardized_place_l IS NULL OR\n    address_standardized_place_r IS NULL OR\n    address_standardized_place_l = address_standardized_place_r\n)\n)",
+          "label_for_charts": "Exac",
+          "m_probability": 0.0697421680745395,
+          "u_probability": 0.00010425354309984673,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "((state_cleaned_l = address_standardized_state_r)\nAND (damerau_levenshtein(address_standardized_street_l, address_standardized_street_r) <= 1)\nAND (\n    (address_standardized_zip_code_l IS NULL OR address_standardized_zip_code_r IS NULL OR\n    address_standardized_zip_code_l = address_standardized_zip_code_r)\n)\nAND (\n    (address_standardized_pre_directional_l IS NULL OR address_standardized_pre_directional_r IS NULL)\n    OR (address_standardized_pre_directional_l = address_standardized_pre_directional_r)\n) \nAND (\n    (address_standardized_post_directional_l IS NULL OR address_standardized_post_directional_r IS NULL)\n    OR (address_standardized_post_directional_l = address_standardized_post_directional_r)\n)\nAND (\n    (address_standardized_occupancy_type_l IS NULL OR address_standardized_occupancy_type_r IS NULL)\n    OR (address_standardized_occupancy_type_l = address_standardized_occupancy_type_r)\n)\nAND (\n    (address_standardized_occupancy_identifier_l IS NULL OR address_standardized_occupancy_identifier_r IS NULL)\n    OR (address_standardized_occupancy_identifier_l = address_standardized_occupancy_identifier_r)\n)\nAND (\n    (address_standardized_place_l IS NULL OR address_standardized_place_r IS NULL)\n    OR (address_standardized_place_l = address_standardized_place_r)\n)\n)",
+          "label_for_charts": "Damerau-Levenshtein Distance on address_standardized_street <= 1",
+          "m_probability": 0.0015181864416949587,
+          "u_probability": 1.8743357230214315e-06,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "((state_cleaned_l = address_standardized_state_r)\nAND (damerau_levenshtein(address_standardized_street_l, address_standardized_street_r) <= 2)\nAND (\n    (address_standardized_zip_code_l IS NULL OR address_standardized_zip_code_r IS NULL OR\n    address_standardized_zip_code_l = address_standardized_zip_code_r)\n)\nAND (\n    (address_standardized_pre_directional_l IS NULL OR address_standardized_pre_directional_r IS NULL)\n    OR (address_standardized_pre_directional_l = address_standardized_pre_directional_r)\n) \nAND (\n    (address_standardized_post_directional_l IS NULL OR address_standardized_post_directional_r IS NULL)\n    OR (address_standardized_post_directional_l = address_standardized_post_directional_r)\n)\nAND (\n    (address_standardized_occupancy_type_l IS NULL OR address_standardized_occupancy_type_r IS NULL)\n    OR (address_standardized_occupancy_type_l = address_standardized_occupancy_type_r)\n)\nAND (\n    (address_standardized_occupancy_identifier_l IS NULL OR address_standardized_occupancy_identifier_r IS NULL)\n    OR (address_standardized_occupancy_identifier_l = address_standardized_occupancy_identifier_r)\n)\nAND (\n    (address_standardized_place_l IS NULL OR address_standardized_place_r IS NULL)\n    OR (address_standardized_place_l = address_standardized_place_r)\n)    \n)",
+          "label_for_charts": "Damerau-Levenshtein Distance on address_standardized_street <= 2",
+          "m_probability": 9.468266677645248e-05,
+          "u_probability": 2.0785435060743502e-07,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        },
+        {
+          "sql_condition": "ELSE",
+          "label_for_charts": "All other comparisons",
+          "m_probability": 0.928644962816989,
+          "u_probability": 0.9998936642668266,
+          "fix_m_probability": false,
+          "fix_u_probability": false
+        }
+      ],
+      "comparison_description": "CustomComparison"
     }
   ]
+}

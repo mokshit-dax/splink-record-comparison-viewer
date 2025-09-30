@@ -7,82 +7,124 @@ from utils.splink_utils import prediction_row_to_waterfall_format, bayes_factor_
 def display_results(result, left_record, right_record):
     """Display comparison results with waterfall chart and table"""
     
-    # Extract match weight and probability
-    match_weight = result.get('match_weight', 0)
-    bayes_factor = 2 ** match_weight
-    match_probability = bayes_factor_to_prob(bayes_factor)
-    error_probability = 1 - match_probability
-    
-    # Display formatted title with highlighted metrics
-    # Center the title
-    col1, col2, col3 = st.columns([1, 3, 1])
-    with col2:
-        st.markdown(f"""## Match weight <span style="color: #2196F3; font-weight: bold;">{match_weight:.4f}</span> corresponding to match probability <span style="color: #4CAF50; font-weight: bold;">{match_probability:.2%}</span>""", unsafe_allow_html=True)
-    
-    # Create waterfall chart
+    # Create waterfall chart first to get the recalculated final score (without TF adjustments)
     waterfall_data = prediction_row_to_waterfall_format(result)
     waterfall_df = pd.DataFrame(waterfall_data)
     
-    # Create the waterfall chart using Altair and center it
+    # Extract the recalculated final score from waterfall data (without TF adjustments)
+    final_score_row = waterfall_df[waterfall_df['column_name'] == 'Final score'].iloc[0]
+    match_weight = final_score_row['log2_bayes_factor']
+    bayes_factor = final_score_row['bayes_factor']
+    match_probability = bayes_factor_to_prob(bayes_factor)
+    error_probability = 1 - match_probability
+    
+    # Display results header with metrics
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                padding: 2rem; border-radius: 15px; margin-bottom: 2rem; text-align: center;">
+        <h2 style="color: white; margin: 0 0 1rem 0; font-size: 2rem;">📊 Match Analysis Results</h2>
+        <div style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;">
+            <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 10px; min-width: 200px;">
+                <div style="color: #FFD700; font-size: 1.5rem; font-weight: bold;">Match Weight</div>
+                <div style="color: white; font-size: 2rem; font-weight: bold;">{:.4f}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 10px; min-width: 200px;">
+                <div style="color: #90EE90; font-size: 1.5rem; font-weight: bold;">Match Probability</div>
+                <div style="color: white; font-size: 2rem; font-weight: bold;">{:.2%}</div>
+            </div>
+        </div>
+    </div>
+    """.format(match_weight, match_probability), unsafe_allow_html=True)
+    
+    # Create the waterfall chart using Altair with full width
     chart = create_waterfall_chart(waterfall_df, match_weight, match_probability)
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        st.altair_chart(chart, use_container_width=False)
+    st.altair_chart(chart, use_container_width=True)
     
     
     # JSON export
-    with st.expander("📄 Export Records as JSON"):
+    with st.expander("📄 Export Records as JSON", expanded=False):
         records_json = json.dumps({
             'record_left': left_record,
-            'record_right': right_record
+            'record_right': right_record,
+            'match_analysis': {
+                'match_weight': match_weight,
+                'match_probability': match_probability,
+                'bayes_factor': bayes_factor
+            }
         }, indent=2)
         st.code(records_json, language='json')
         
-        if st.button("📋 Copy to Clipboard"):
+        if st.button("📋 Copy to Clipboard", key="copy_json"):
             st.code("Use Ctrl+C to copy the JSON above")
 
     # Comparison table (Left, Right, Diff)
-    st.subheader("📋 Record Comparison")
-    fields = ['first_name', 'surname', 'dob', 'birth_place', 'postcode_fake', 'occupation']
+    st.markdown("### 📋 Detailed Record Comparison")
+    st.markdown("Compare individual fields between the two records:")
+    
+    fields = ['first_lower', 'last_lower', 'email_cleaned', 'phone_list', 'business_name_list', 'address_standardized']
 
     # Build HTML table with minimal styling and diff highlighting
     header_cells = ''.join([f'<th style="padding:8px 12px; border-bottom:1px solid #e6e6e6; text-align:left;">{col}</th>' for col in fields])
 
     def safe_str(value):
-        return '' if value is None else str(value)
+        if value is None:
+            return ''
+        if isinstance(value, list):
+            return ', '.join(str(v) for v in value if v)
+        return str(value)
+
+    # Helper function to get field values from records
+    def get_field_value(record, field_name):
+        """Get field value from record, handling both old and new formats"""
+        # Try new format first (field_name_l/r)
+        left_key = f"{field_name}_l"
+        right_key = f"{field_name}_r"
+        
+        if left_key in record:
+            return record[left_key]
+        elif right_key in record:
+            return record[right_key]
+        elif field_name in record:
+            return record[field_name]
+        else:
+            return ""
 
     left_cells = ''.join([
-        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2;">{safe_str(left_record.get(col, ""))}</td>'
+        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2;">{safe_str(get_field_value(left_record, col))}</td>'
         for col in fields
     ])
     right_cells = ''.join([
-        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2;">{safe_str(right_record.get(col, ""))}</td>'
+        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2;">{safe_str(get_field_value(right_record, col))}</td>'
         for col in fields
     ])
     diff_cells = ''.join([
-        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2;">{generate_diff_html(safe_str(left_record.get(col, "")), safe_str(right_record.get(col, "")))}</td>'
+        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2;">{generate_diff_html(safe_str(get_field_value(left_record, col)), safe_str(get_field_value(right_record, col)))}</td>'
         for col in fields
     ])
 
     table_html = f'''
-    <div style="overflow-x:auto;">
+    <div style="overflow-x:auto; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 1rem 0;">
       <table style="width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; font-size:14px;">
-        <tr>
-          <th style="padding:8px 12px; border-bottom:2px solid #ddd; text-align:left; width:140px;"> </th>
-          {header_cells}
-        </tr>
-        <tr>
-          <td style="padding:8px 12px; border-bottom:1px solid #f2f2f2; font-weight:600; color:#555;">Left Record</td>
-          {left_cells}
-        </tr>
-        <tr>
-          <td style="padding:8px 12px; border-bottom:1px solid #f2f2f2; font-weight:600; color:#555;">Right Record</td>
-          {right_cells}
-        </tr>
-        <tr>
-          <td style="padding:8px 12px; border-bottom:1px solid #f2f2f2; font-weight:600; color:#555;">Diff</td>
-          {diff_cells}
-        </tr>
+        <thead>
+          <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <th style="padding:15px 12px; text-align:left; width:140px; color: white; font-weight: 600; border-radius: 10px 0 0 0;">Field</th>
+            {header_cells}
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background: #f8f9fa;">
+            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6;">📝 Record A</td>
+            {left_cells}
+          </tr>
+          <tr style="background: #f8f9fa;">
+            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6;">📝 Record B</td>
+            {right_cells}
+          </tr>
+          <tr style="background: #fff3cd; border-top: 2px solid #ffc107;">
+            <td style="padding:12px; font-weight:600; color:#856404; border-bottom:1px solid #dee2e6;">🔍 Difference</td>
+            {diff_cells}
+          </tr>
+        </tbody>
       </table>
     </div>
     '''
@@ -125,8 +167,8 @@ def create_waterfall_chart(df, match_weight, match_probability):
             axis=alt.Axis(
                 labelAngle=0,
                 labelFontSize=12,
-                labelOverlap=True,
-                labelPadding=4,
+                labelOverlap=False,
+                labelPadding=0,
                 labelLimit=160,
                 labelExpr="datum.value"
             ),
@@ -194,9 +236,9 @@ def create_waterfall_chart(df, match_weight, match_probability):
                 labelExpr="format(1 / (1 + pow(2, -1*datum.value)), '.2r')",
                 grid=False,
                 tickCount=8,
-                labelOverlap=True,
-                offset=24,
-                titlePadding=30
+                labelOverlap=False,
+                offset=0,
+                titlePadding=0
             ),
             scale=alt.Scale(nice=False, domain=[y_min, y_max])
         )
@@ -211,10 +253,10 @@ def create_waterfall_chart(df, match_weight, match_probability):
                 title='Match Weight',
                 grid=True,
                 tickCount=8,
-                labelOverlap=True,
-                labelPadding=4,
+                labelOverlap=False,
+                labelPadding=0,
                 offset=0,
-                titlePadding=30
+                titlePadding=0
             ),
             scale=alt.Scale(nice=False, domain=[y_min, y_max])
         )
@@ -226,13 +268,13 @@ def create_waterfall_chart(df, match_weight, match_probability):
     ).resolve_scale(
         y='independent'
     ).properties(
-        width=1000,
-        height=450,
+        width=1200,
+        height=500,
         title=alt.TitleParams(
             text=['Match weights waterfall chart', 'How each comparison contributes to the final match score'],
             fontSize=16,
             anchor='start',
-            offset=10
+            offset=0
         )
     )
     
