@@ -9,13 +9,7 @@ Load a trained Splink model from MLflow and compare two custom records using tha
 Clone the project
 
 ```bash
-  git clone https://link-to-project
-```
-
-Go to the project directory
-
-```bash
-  cd my-project
+  git clone [https://link-to-project](https://github.com/mokshit-dax/splink-record-comparison-viewer.git)
 ```
 
 Install dependencies
