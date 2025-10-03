@@ -33,7 +33,7 @@ SESSION_KEYS = {
 # Page configuration
 st.set_page_config(
     page_title="Splink Record Comparison",
-    page_icon="🔗",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -218,6 +218,9 @@ def calculate_predictions(left_record: Dict[str, Any], right_record: Dict[str, A
             settings=linker_json,
         )
 
+        left_record_fixed['nicknames'] = ['']
+        right_record_fixed['nicknames'] = ['']
+
         # Run prediction
         return linker.inference.compare_two_records(left_record_fixed, right_record_fixed)
         
@@ -242,7 +245,7 @@ def _render_header() -> None:
     """Render the application header section."""
     st.markdown("""
     <div class="main-header">
-        <h1>🔗 Splink Record Comparison</h1>
+        <h1>Splink Record Comparison</h1>
         <p>Compare two records using advanced data linking algorithms</p>
     </div>
     """, unsafe_allow_html=True)
@@ -251,7 +254,7 @@ def _render_header() -> None:
 def _render_model_configuration() -> None:
     """Render the model configuration section."""
     with st.container():
-        st.markdown("### 📊 Model Configuration")
+        st.markdown("### Model Configuration")
         model_uri = st.text_input('Enter the model URI', value=DEFAULT_MODEL_URI)
         fetch_model_button = st.button("Fetch Model", key="fetch_model_button")
         
@@ -303,7 +306,7 @@ def _render_record_input_forms() -> None:
     # Display model info in a nice card
     st.markdown(f"""
     <div class="metric-card">
-        <strong>📋 Record Schema:</strong> {', '.join(additional_columns_to_retain)}
+        <strong>Record Schema:</strong> {', '.join(additional_columns_to_retain)}
     </div>
     """, unsafe_allow_html=True)
     
@@ -363,7 +366,6 @@ def _run_comparison() -> None:
                 
                 if prediction_result.as_record_dict()[0]:
                     # Store result in session state for display
-                    st.write(f"Predicted result: {prediction_result.as_record_dict()[0]}")
                     st.session_state[SESSION_KEYS['LAST_RESULT']] = prediction_result.as_record_dict()[0]
                     st.session_state[SESSION_KEYS['LAST_LEFT_RECORD']] = left_record
                     st.session_state[SESSION_KEYS['LAST_RIGHT_RECORD']] = right_record
@@ -379,7 +381,7 @@ def _render_results_display() -> None:
     required_keys = [SESSION_KEYS['LAST_RESULT'], SESSION_KEYS['LAST_LEFT_RECORD'], SESSION_KEYS['LAST_RIGHT_RECORD']]
     if all(key in st.session_state for key in required_keys):
         st.markdown("---")
-        st.markdown("### 📈 Comparison Results")
+        st.markdown("### Comparison Results")
         display_results(
             st.session_state[SESSION_KEYS['LAST_RESULT']], 
             st.session_state[SESSION_KEYS['LAST_LEFT_RECORD']], 

@@ -22,15 +22,15 @@ def display_results(result, left_record, right_record):
     st.markdown("""
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                 padding: 2rem; border-radius: 15px; margin-bottom: 2rem; text-align: center;">
-        <h2 style="color: white; margin: 0 0 1rem 0; font-size: 2rem;">📊 Match Analysis Results</h2>
+        <h2 style="color: white; margin: 0 0 1rem 0; font-size: 2rem;">Match Analysis Results</h2>
         <div style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;">
             <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 10px; min-width: 200px;">
-                <div style="color: #FFD700; font-size: 1.5rem; font-weight: bold;">Match Weight</div>
-                <div style="color: white; font-size: 2rem; font-weight: bold;">{:.4f}</div>
+                <div style="color: #FFD700; font-size: 1.8rem; font-weight: bold;">Match Weight</div>
+                <div style="color: white; font-size: 2.5rem; font-weight: bold;">{:.4f}</div>
             </div>
             <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 10px; min-width: 200px;">
-                <div style="color: #90EE90; font-size: 1.5rem; font-weight: bold;">Match Probability</div>
-                <div style="color: white; font-size: 2rem; font-weight: bold;">{:.2%}</div>
+                <div style="color: #90EE90; font-size: 1.8rem; font-weight: bold;">Match Probability</div>
+                <div style="color: white; font-size: 2.5rem; font-weight: bold;">{:.2%}</div>
             </div>
         </div>
     </div>
@@ -54,17 +54,17 @@ def display_results(result, left_record, right_record):
         }, indent=2)
         st.code(records_json, language='json')
         
-        if st.button("📋 Copy to Clipboard", key="copy_json"):
+        if st.button("Copy to Clipboard", key="copy_json"):
             st.code("Use Ctrl+C to copy the JSON above")
 
     # Comparison table (Left, Right, Diff)
-    st.markdown("### 📋 Detailed Record Comparison")
+    st.markdown("### Detailed Record Comparison")
     st.markdown("Compare individual fields between the two records:")
     
     fields = ['first_lower', 'last_lower', 'email_cleaned', 'phone_list', 'business_name_list', 'address_standardized']
 
     # Build HTML table with minimal styling and diff highlighting
-    header_cells = ''.join([f'<th style="padding:8px 12px; border-bottom:1px solid #e6e6e6; text-align:left;">{col}</th>' for col in fields])
+    header_cells = ''.join([f'<th style="padding:8px 12px; border-bottom:1px solid #e6e6e6; text-align:left; font-size:16px; font-weight:600;">{col}</th>' for col in fields])
 
     def safe_str(value):
         if value is None:
@@ -90,38 +90,38 @@ def display_results(result, left_record, right_record):
             return ""
 
     left_cells = ''.join([
-        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2;">{safe_str(get_field_value(left_record, col))}</td>'
+        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2; font-size:16px;">{safe_str(get_field_value(left_record, col))}</td>'
         for col in fields
     ])
     right_cells = ''.join([
-        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2;">{safe_str(get_field_value(right_record, col))}</td>'
+        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2; font-size:16px;">{safe_str(get_field_value(right_record, col))}</td>'
         for col in fields
     ])
     diff_cells = ''.join([
-        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2;">{generate_diff_html(safe_str(get_field_value(left_record, col)), safe_str(get_field_value(right_record, col)))}</td>'
+        f'<td style="padding:8px 12px; border-bottom:1px solid #f2f2f2; font-size:16px;">{generate_diff_html(safe_str(get_field_value(left_record, col)), safe_str(get_field_value(right_record, col)))}</td>'
         for col in fields
     ])
 
     table_html = f'''
     <div style="overflow-x:auto; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 1rem 0;">
-      <table style="width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; font-size:14px;">
+      <table style="width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; font-size:16px;">
         <thead>
           <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <th style="padding:15px 12px; text-align:left; width:140px; color: white; font-weight: 600; border-radius: 10px 0 0 0;">Field</th>
+            <th style="padding:15px 12px; text-align:left; width:140px; color: white; font-weight: 600; font-size:16px; border-radius: 10px 0 0 0;">Field</th>
             {header_cells}
           </tr>
         </thead>
         <tbody>
           <tr style="background: #f8f9fa;">
-            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6;">📝 Record A</td>
+            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6; font-size:16px;">📝 Record A</td>
             {left_cells}
           </tr>
           <tr style="background: #f8f9fa;">
-            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6;">📝 Record B</td>
+            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6; font-size:16px;">📝 Record B</td>
             {right_cells}
           </tr>
           <tr style="background: #fff3cd; border-top: 2px solid #ffc107;">
-            <td style="padding:12px; font-weight:600; color:#856404; border-bottom:1px solid #dee2e6;">🔍 Difference</td>
+            <td style="padding:12px; font-weight:600; color:#856404; border-bottom:1px solid #dee2e6; font-size:16px;">🔍 Difference</td>
             {diff_cells}
           </tr>
         </tbody>
@@ -166,7 +166,7 @@ def create_waterfall_chart(df, match_weight, match_probability):
             title='Column',
             axis=alt.Axis(
                 labelAngle=0,
-                labelFontSize=12,
+                labelFontSize=16,
                 labelOverlap=False,
                 labelPadding=0,
                 labelLimit=160,
@@ -205,7 +205,7 @@ def create_waterfall_chart(df, match_weight, match_probability):
     text_labels = base.mark_text(
         align='center',
         baseline='middle',
-        fontSize=12,
+        fontSize=24,
         fontWeight='bold',
         color='white'
     ).encode(
@@ -233,7 +233,9 @@ def create_waterfall_chart(df, match_weight, match_probability):
             axis=alt.Axis(
                 orient='right',
                 title='Probability',
-                labelExpr="format(1 / (1 + pow(2, -1*datum.value)), '.2r')",
+                titleFontSize=16,
+                labelFontSize=20,
+                labelExpr="format(1 / (1 + pow(2, -1*datum.value)), '.2f')",
                 grid=False,
                 tickCount=8,
                 labelOverlap=False,
@@ -251,6 +253,8 @@ def create_waterfall_chart(df, match_weight, match_probability):
             axis=alt.Axis(
                 orient='left',
                 title='Match Weight',
+                titleFontSize=16,
+                labelFontSize=20,
                 grid=True,
                 tickCount=8,
                 labelOverlap=False,
@@ -272,7 +276,7 @@ def create_waterfall_chart(df, match_weight, match_probability):
         height=500,
         title=alt.TitleParams(
             text=['Match weights waterfall chart', 'How each comparison contributes to the final match score'],
-            fontSize=16,
+            fontSize=24,
             anchor='start',
             offset=0
         )
