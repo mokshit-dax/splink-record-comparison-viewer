@@ -236,6 +236,8 @@ def main() -> None:
     """
     Main application function that orchestrates the Streamlit interface.
     """
+    mlflow.set_tracking_uri("databricks")
+    mlflow.set_registry_uri("databricks-uc")
     _render_header()
     _render_model_configuration()
     _render_record_comparison_interface()
@@ -380,12 +382,14 @@ def _render_results_display() -> None:
     """Render the results display section if results are available."""
     required_keys = [SESSION_KEYS['LAST_RESULT'], SESSION_KEYS['LAST_LEFT_RECORD'], SESSION_KEYS['LAST_RIGHT_RECORD']]
     if all(key in st.session_state for key in required_keys):
+        additional_columns_to_retain = normalize_config(st.session_state[SESSION_KEYS['LINKER_JSON']])['additional_columns_to_retain']
         st.markdown("---")
         st.markdown("### Comparison Results")
         display_results(
             st.session_state[SESSION_KEYS['LAST_RESULT']], 
             st.session_state[SESSION_KEYS['LAST_LEFT_RECORD']], 
-            st.session_state[SESSION_KEYS['LAST_RIGHT_RECORD']]
+            st.session_state[SESSION_KEYS['LAST_RIGHT_RECORD']],
+            additional_columns_to_retain
         )
 
 

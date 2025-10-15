@@ -4,7 +4,7 @@ import pandas as pd
 import json
 from utils.splink_utils import prediction_row_to_waterfall_format, bayes_factor_to_prob, generate_diff_html
 
-def display_results(result, left_record, right_record):
+def display_results(result, left_record, right_record, additional_columns_to_retain):
     """Display comparison results with waterfall chart and table"""
     
     # Create waterfall chart first to get the recalculated final score (without TF adjustments)
@@ -61,7 +61,7 @@ def display_results(result, left_record, right_record):
     st.markdown("### Detailed Record Comparison")
     st.markdown("Compare individual fields between the two records:")
     
-    fields = ['first_lower', 'last_lower', 'email_cleaned', 'phone_list', 'business_name_list', 'address_standardized']
+    fields = additional_columns_to_retain
 
     # Build HTML table with minimal styling and diff highlighting
     header_cells = ''.join([f'<th style="padding:8px 12px; border-bottom:1px solid #e6e6e6; text-align:left; font-size:16px; font-weight:600;">{col}</th>' for col in fields])
