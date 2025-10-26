@@ -113,15 +113,15 @@ def display_results(result, left_record, right_record, additional_columns_to_ret
         </thead>
         <tbody>
           <tr style="background: #f8f9fa;">
-            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6; font-size:16px;">📝 Record A</td>
+            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6; font-size:16px;"> Record A</td>
             {left_cells}
           </tr>
           <tr style="background: #f8f9fa;">
-            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6; font-size:16px;">📝 Record B</td>
+            <td style="padding:12px; font-weight:600; color:#495057; border-bottom:1px solid #dee2e6; font-size:16px;"> Record B</td>
             {right_cells}
           </tr>
           <tr style="background: #fff3cd; border-top: 2px solid #ffc107;">
-            <td style="padding:12px; font-weight:600; color:#856404; border-bottom:1px solid #dee2e6; font-size:16px;">🔍 Difference</td>
+            <td style="padding:12px; font-weight:600; color:#856404; border-bottom:1px solid #dee2e6; font-size:16px;"> Difference</td>
             {diff_cells}
           </tr>
         </tbody>

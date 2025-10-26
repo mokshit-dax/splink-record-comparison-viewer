@@ -19,6 +19,60 @@ from utils.splink_utils import prediction_row_to_waterfall_format
 DEFAULT_MODEL_URI = "models:/main.generic_match.nebraska_match/14"
 EMPTY_STRING_PLACEHOLDER = ""
 
+# Hardcoded values for specific model URI
+HARDCODED_RECORD_VALUES = {
+    'left': {
+        "salt_key": 1,
+        "unique_id": 1,
+        "mapped_contact_id": 1,
+        "infogroup_id": 1,
+        "id": 1,
+        "first_lower": "walter",
+        "last_lower": "white",
+        "nicknames": "['walt']",
+        "phone_list": "['1012412351']",
+        "email_cleaned": "walterwhite@gmail.com",
+        "business_name_list": "['dax']",
+        "in_business": "yes",
+        "address_standardized_street_no": 121,
+        "address_standardized_street": "lincolnrd",
+        "address_standardized_pre_directional": "N",
+        "address_standardized_post_directional": "E",
+        "address_standardized_occupancy_type": "rent",
+        "address_standardized_occupancy_identifier": 221,
+        "address_standardized_place": "pune",
+        "state_cleaned": "maharashtra",
+        "address_standardized_state": "maharashtra",
+        "address_standardized_zip_code": 411030,
+        "address_standardized": "121lincolnpunemaharashtra"
+    },
+    'right': {
+        "salt_key": 2,
+        "unique_id": 2,
+        "mapped_contact_id": 2,
+        "infogroup_id": 2,
+        "id": 2,
+        "first_lower": "walter",
+        "last_lower": "white",
+        "nicknames": "['walt']",
+        "phone_list": "['1012412351']",
+        "email_cleaned": "walterwhite@gmail.com",
+        "business_name_list": "['dax']",
+        "in_business": "yes",
+        "address_standardized_street_no": 121,
+        "address_standardized_street": "lincolnrd",
+        "address_standardized_pre_directional": "N",
+        "address_standardized_post_directional": "E",
+        "address_standardized_occupancy_type": "rent",
+        "address_standardized_occupancy_identifier": 221,
+        "address_standardized_place": "pune",
+        "state_cleaned": "maharashtra",
+        "address_standardized_state": "maharashtra",
+        "address_standardized_zip_code": 411030,
+        "address_standardized": "121lincolnpunemaharashtra"
+    }
+}
+
 # Session state keys
 SESSION_KEYS = {
     'LINKER_JSON': 'linker_json',
@@ -27,12 +81,13 @@ SESSION_KEYS = {
     'RIGHT_RECORD': 'right_record',
     'LAST_RESULT': 'last_result',
     'LAST_LEFT_RECORD': 'last_left_record',
-    'LAST_RIGHT_RECORD': 'last_right_record'
+    'LAST_RIGHT_RECORD': 'last_right_record',
+    'MODEL_URI': 'model_uri'
 }
 
 # Page configuration
 st.set_page_config(
-    page_title="Splink Record Comparison",
+    page_title="MatchAI Record Comparison",
     page_icon="",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -247,8 +302,8 @@ def _render_header() -> None:
     """Render the application header section."""
     st.markdown("""
     <div class="main-header">
-        <h1>Splink Record Comparison</h1>
-        <p>Compare two records using advanced data linking algorithms</p>
+        <h1>MatchAI Record Comparison</h1>
+        <p>Compare two records using a trained MatchAI Model</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -286,6 +341,7 @@ def _load_model(model_uri: str) -> None:
         st.session_state[SESSION_KEYS['LINKER_JSON']] = convert_to_json(
             st.session_state[SESSION_KEYS['MLFLOW_LINKER']].unwrap_python_model().model_json.copy()
         )
+        st.session_state[SESSION_KEYS['MODEL_URI']] = model_uri
         st.success("Model loaded successfully!")
     except Exception as e:
         st.error(f"Failed to load model: {str(e)}")
@@ -305,15 +361,26 @@ def _render_record_input_forms() -> None:
     """Render the record input forms section."""
     additional_columns_to_retain = normalize_config(st.session_state[SESSION_KEYS['LINKER_JSON']])['additional_columns_to_retain']
     
+    # Check if we should use hardcoded values
+    current_model_uri = st.session_state.get(SESSION_KEYS['MODEL_URI'], '')
+    use_hardcoded = current_model_uri == DEFAULT_MODEL_URI
+    
+    if use_hardcoded:
+        left_initial_data = HARDCODED_RECORD_VALUES['left']
+        right_initial_data = HARDCODED_RECORD_VALUES['right']
+    else:
+        left_initial_data = {}
+        right_initial_data = {}
+    
     # Display model info in a nice card
     st.markdown(f"""
     <div class="metric-card">
         <strong>Record Schema:</strong> {', '.join(additional_columns_to_retain)}
     </div>
     """, unsafe_allow_html=True)
-    
+        
     # Record input section
-    st.markdown("### 📝 Record Input")
+    st.markdown("### Record Input")
     st.markdown("Enter the details for both records you want to compare:")
     
     # Create two-column layout for forms
@@ -321,9 +388,9 @@ def _render_record_input_forms() -> None:
     
     with left_column:
         st.markdown('<div class="record-section">', unsafe_allow_html=True)
-        st.markdown("#### 📝 Record A")
+        st.markdown("#### Record A")
         st.session_state[SESSION_KEYS['LEFT_RECORD']] = create_record_forms(
-            {}, 
+            left_initial_data, 
             key_prefix="left",
             additional_columns_to_retain=additional_columns_to_retain
         )
@@ -331,9 +398,9 @@ def _render_record_input_forms() -> None:
     
     with right_column:
         st.markdown('<div class="record-section">', unsafe_allow_html=True)
-        st.markdown("#### 📝 Record B")
+        st.markdown("#### Record B")
         st.session_state[SESSION_KEYS['RIGHT_RECORD']] = create_record_forms(
-            {}, 
+            right_initial_data, 
             key_prefix="right",
             additional_columns_to_retain=additional_columns_to_retain
         )
@@ -345,7 +412,7 @@ def _render_calculation_section() -> None:
     st.markdown('<div class="calculate-section">', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        calculate_button = st.button("🔍 Calculate Match Score", type="primary", use_container_width=True)
+        calculate_button = st.button("Calculate Match Score", type="primary", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
     if calculate_button:
@@ -358,7 +425,7 @@ def _run_comparison() -> None:
     right_record = st.session_state.get(SESSION_KEYS['RIGHT_RECORD'])
     
     if left_record and right_record:
-        with st.spinner("🔄 Analyzing records and calculating match score..."):
+        with st.spinner("Analyzing records and calculating match score..."):
             try:
                 prediction_result = calculate_predictions(
                     left_record, 
@@ -371,11 +438,11 @@ def _run_comparison() -> None:
                     st.session_state[SESSION_KEYS['LAST_RESULT']] = prediction_result.as_record_dict()[0]
                     st.session_state[SESSION_KEYS['LAST_LEFT_RECORD']] = left_record
                     st.session_state[SESSION_KEYS['LAST_RIGHT_RECORD']] = right_record
-                    st.success("✅ Comparison completed successfully!")
+                    st.success("Comparison completed successfully!")
                 else:
-                    st.error("❌ No comparison results returned")
+                    st.error("No comparison results returned")
             except Exception as e:
-                st.error(f"❌ Failed to run comparison: {str(e)}")
+                st.error(f"Failed to run comparison: {str(e)}")
 
 
 def _render_results_display() -> None:
